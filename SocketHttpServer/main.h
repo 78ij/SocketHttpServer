@@ -31,6 +31,7 @@ private:
 	void OnSave(wxCommandEvent& event);
 	void OnStart(wxCommandEvent& event);
 	void OnExit(wxCommandEvent& event);
+	void OnStop(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);
 	void OnClickPathButton(wxCommandEvent &event);
 	void OnClose(wxCloseEvent &event);
@@ -51,7 +52,7 @@ enum
 {
 	ID_Save = 1,
 	ID_StartServer,
-	ID_STOPSERVER,
+	ID_StopServer,
 	ID_PATH
 };
 

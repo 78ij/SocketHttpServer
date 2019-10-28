@@ -8,6 +8,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 EVT_BUTTON(ID_PATH, MyFrame::OnClickPathButton)
 EVT_BUTTON(ID_Save, MyFrame::OnSave)
 EVT_BUTTON(ID_StartServer, MyFrame::OnStart)
+EVT_BUTTON(ID_StopServer, MyFrame::OnStop)
 EVT_MENU(wxID_EXIT, MyFrame::OnExit)
 EVT_CLOSE(MyFrame::OnClose)
 EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
@@ -44,7 +45,7 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
 	pathtext = new wxTextCtrl(this, -1, "ÉèÖÃÂ·¾¶£ºÇëÊäÈë»òÕß°´ÓÒ±ß°´Å¥Ñ¡Ôñ", wxDefaultPosition,
 		wxSize(700, 20), 0, wxDefaultValidator, "AddrText");
 	startbutton = new wxButton(this, ID_StartServer, "¿ªÊ¼¼àÌý", wxDefaultPosition, wxSize(50, 20));
-	stopbutton = new wxButton(this, ID_STOPSERVER, "Í£Ö¹¼àÌý", wxDefaultPosition, wxSize(50, 20));
+	stopbutton = new wxButton(this, ID_StopServer, "Í£Ö¹¼àÌý", wxDefaultPosition, wxSize(50, 20));
 	pathbutton = new   wxButton(this, ID_PATH, "...", wxDefaultPosition, wxSize(10, 20));
 	addrtext = new wxTextCtrl(this, -1, "¼àÌýµØÖ·£¨Ä¬ÈÏ127.0.0.1)", wxDefaultPosition,
 		wxSize(290, 20), 0, wxDefaultValidator, "AddrText");
@@ -181,10 +182,33 @@ void MyFrame::OnRequestReceviedEvent(wxCommandEvent& event) {
 	wxMessageOutputDebug().Printf("!!!!!!!!!!!");
 	messagelist->InsertItems(1, &event.GetString(),messagelist->GetCount());
 }
-
+void MyFrame::OnStop(wxCommandEvent &event) {
+	{
+		wxCriticalSectionLocker enter(m_pThreadCS);
+		if (m_plistenthread)         // does the thread still exist?
+		{
+			wxMessageOutputDebug().Printf("MYFRAME: deleting thread");
+			if (m_plistenthread->Delete() != wxTHREAD_NO_ERROR)
+				wxLogError("Can't delete the thread!");
+		}
+	}       // exit from the critical section to give the thread
+			// the possibility to enter its destructor
+			// (which is guarded with m_pThreadCS critical section!)
+	while (1)
+	{
+		{ // was the ~MyThread() function executed?
+			wxCriticalSectionLocker enter(m_pThreadCS);
+			if (!m_plistenthread) break;
+		}
+	}
+	wxMessageDialog stopdlg(this, wxT("¼àÌýÒÑÍ£Ö¹!"), wxT("Í£Ö¹"), wxOK);
+	stopdlg.ShowModal();
+	delete server;
+	server = NULL;
+}
 void MyFrame::OnStart(wxCommandEvent &event) {
 	if (m_plistenthread != NULL) {
-		wxMessageDialog errdlg(this, wxT("·þÎñÆ÷ÒÑ¾­Æô¶¯»òÆäËû´íÎó£¡"), wxT("´íÎó£¡"), wxOK);
+		wxMessageDialog errdlg(this, wxT("·þÎñÆ÷ÒÑ¾­Æô¶¯!"), wxT("´íÎó£¡"), wxOK);
 		errdlg.ShowModal();
 		return;
 	}
@@ -195,7 +219,7 @@ void MyFrame::OnStart(wxCommandEvent &event) {
 		if (addrtext->GetLineText(0) == "¼àÌýµØÖ·£¨Ä¬ÈÏ127.0.0.1)") host = "127.0.0.1";
 		else host = addrtext->GetLineText(0);
 		if (porttext->GetLineText(0) == "¼àÌý¶Ë¿Ú£¨Ä¬ÈÏ45678)") port = "45678";
-		else host = porttext->GetLineText(0);
+		else port = porttext->GetLineText(0);
 		int portint;
 		portint = std::stoi(port);
 		server = new SocketServer(host, portint, 128,NonBlockingSocket);
