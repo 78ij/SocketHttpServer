@@ -39,7 +39,8 @@ wxThread::ExitCode WorkerThread::Entry() {
 				ret.build();
 				s->SendBytes(ret.message);
 				wxCommandEvent event(wxEVT_COMMAND_TEXT_UPDATED, EVT_REQUEST);
-				event.SetString(std::string(inet_ntoa(sa.sin_addr)) + " - " + m.version + " " + m.method + " " + m.URL + " ---- " + ret.status);
+				event.SetString(std::string(inet_ntoa(sa.sin_addr)) + ":" + std::to_string(ntohs(sa.sin_port)) + " - " +
+					m.version + " " + m.method + " " + m.URL + " ---- " + ret.status);
 				m_pHandler->GetEventHandler()->AddPendingEvent(event);
 				s->Close();
 				break;
@@ -51,18 +52,16 @@ wxThread::ExitCode WorkerThread::Entry() {
 				ret.statusdesc = "OK";
 
 				wxFile fd;
-				wxString fc;
 				if (fd.Open(requestedpath)) {
-					fd.ReadAll(&fc);
+					fd.Read(ret.content,fd.Length());
 				}
 				ret.headers.insert(std::make_pair("Connection", "Keep-Alive"));
-				ret.headers.insert(std::make_pair("Content-Length", std::to_string(fc.size())));
-				std::string(fc).copy(ret.content, INT_MAX);
+				ret.headers.insert(std::make_pair("Content-Length", std::to_string(fd.Length())));
 				ret.build();
 				s->SendBytes(ret.message);
 				wxCommandEvent event(wxEVT_COMMAND_TEXT_UPDATED, EVT_REQUEST);
-				event.SetString(std::string(inet_ntoa(sa.sin_addr)) + " - " + m.version + " " + m.method + " " + m.URL + " ---- " + ret.status);
-				m_pHandler->GetEventHandler()->AddPendingEvent(event);
+				event.SetString(std::string(inet_ntoa(sa.sin_addr)) + ":" + std::to_string(ntohs(sa.sin_port)) + " - " +
+					m.version + " " + m.method + " " + m.URL + " ---- " + ret.status);				m_pHandler->GetEventHandler()->AddPendingEvent(event);
 			}
 		}
 		wxThread::This()->Sleep(20);

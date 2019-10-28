@@ -47,9 +47,14 @@ int http_message::build() {
 	for (auto header : headers) {
 		str = str + header.first + ": " + header.second + "\r\n";
 	}
+	int length = std::stoi(headers.at("Content-Length"));
 	str = str + "\n";
-	if(content)
-		str = str + content;
+	if (content) {
+		for (int i = 0; i < length; i++) {
+			str = str + content[i];
+		}
+	}
+
 	message = str;
 	return 0;
 }
